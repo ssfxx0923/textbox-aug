@@ -212,8 +212,8 @@ class DatabaseManager {
 let dbInstance: DatabaseManager | null = null;
 
 export function getDatabase(): DatabaseManager {
-  // 如果有 DATABASE_URL 环境变量，使用 Neon PostgreSQL
-  if (process.env.DATABASE_URL) {
+  // 如果有数据库连接字符串环境变量，使用 Neon PostgreSQL
+  if (process.env.DATABASE_URL || process.env.DATABASE_DATABASE_URL || process.env.DATABASE_POSTGRES_URL) {
     return getNeonDatabase() as any;
   }
   

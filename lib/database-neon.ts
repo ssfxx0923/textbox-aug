@@ -27,9 +27,12 @@ class NeonDatabaseManager {
   private sql: any;
 
   constructor() {
-    const databaseUrl = process.env.DATABASE_URL;
+    // 尝试多种可能的环境变量名称
+    const databaseUrl = process.env.DATABASE_URL || 
+                       process.env.DATABASE_DATABASE_URL || 
+                       process.env.DATABASE_POSTGRES_URL;
     if (!databaseUrl) {
-      throw new Error('DATABASE_URL environment variable is not set');
+      throw new Error('Database URL environment variable is not set');
     }
     this.sql = neon(databaseUrl);
     this.initDatabase();
