@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
     }
     
     const db = getDatabase();
-    const cardKeys = db.getAllCardKeys();
-    const stats = db.getStats();
+    const cardKeys = await db.getAllCardKeys();
+    const stats = await db.getStats();
     
     return NextResponse.json({ cardKeys, stats });
   } catch (error) {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     if (single) {
       // 单个卡密添加
       const cardData = JSON.parse(text);
-      const token = db.addCardKey(cardData);
+      const token = await db.addCardKey(cardData);
       return NextResponse.json({ 
         message: '卡密添加成功',
         token,
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: '未能解析到有效的卡密数据' }, { status: 400 });
       }
       
-      const tokens = db.batchAddCardKeys(parsedCards);
+      const tokens = await db.batchAddCardKeys(parsedCards);
       const links = tokens.map(token => 
         `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/key/${token}`
       );
