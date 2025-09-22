@@ -25,6 +25,7 @@ export interface Admin {
 
 class NeonDatabaseManager {
   private sql: any;
+  private initialized: boolean = false;
 
   constructor() {
     const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_DATABASE_URL;
@@ -32,7 +33,13 @@ class NeonDatabaseManager {
       throw new Error('DATABASE_URL or DATABASE_DATABASE_URL environment variable is not set');
     }
     this.sql = neon(databaseUrl);
-    this.initDatabase();
+  }
+
+  private async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initDatabase();
+      this.initialized = true;
+    }
   }
 
   private async initDatabase() {
@@ -90,6 +97,7 @@ class NeonDatabaseManager {
 
   // 添加卡密
   async addCardKey(cardData: Omit<CardKey, 'id' | 'secure_token' | 'is_used' | 'created_at' | 'used_at'>): Promise<string> {
+    await this.ensureInitialized();
     const secure_token = this.generateSecureToken();
     
     await this.sql`
@@ -120,6 +128,7 @@ class NeonDatabaseManager {
 
   // 通过安全令牌获取卡密
   async getCardKeyByToken(secure_token: string): Promise<CardKey | null> {
+    await this.ensureInitialized();
     const result = await this.sql`
       SELECT * FROM card_keys WHERE secure_token = ${secure_token}
     `;
@@ -168,6 +177,7 @@ class NeonDatabaseManager {
 
   // 获取所有卡密（管理端）
   async getAllCardKeys(): Promise<CardKey[]> {
+    await this.ensureInitialized();
     const result = await this.sql`
       SELECT * FROM card_keys 
       ORDER BY created_at DESC
@@ -231,6 +241,7 @@ class NeonDatabaseManager {
 
   // 通过用户名获取管理员
   async getAdminByUsername(username: string): Promise<Admin | null> {
+    await this.ensureInitialized();
     const result = await this.sql`
       SELECT * FROM admins WHERE username = ${username}
     `;
