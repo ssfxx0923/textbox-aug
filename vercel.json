@@ -3,15 +3,5 @@
     "app/api/**/*.ts": {
       "maxDuration": 30
     }
-  },
-  "env": {
-    "JWT_SECRET": "@jwt-secret",
-    "NEXT_PUBLIC_BASE_URL": "@base-url"
-  },
-  "build": {
-    "env": {
-      "JWT_SECRET": "@jwt-secret",
-      "NEXT_PUBLIC_BASE_URL": "@base-url"
-    }
   }
 }

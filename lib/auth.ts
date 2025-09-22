@@ -2,9 +2,17 @@ import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import { getDatabase } from './database';
 
-const JWT_SECRET = new TextEncoder().encode(
-  (process.env.JWT_SECRET as string) || 'your-secret-key-change-this-in-production'
-);
+// 生成一个默认的JWT密钥（仅用于开发环境）
+const getJWTSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    console.warn('⚠️  JWT_SECRET environment variable is not set. Using default secret for development.');
+    return 'default-jwt-secret-for-development-only-change-in-production';
+  }
+  return secret;
+};
+
+const JWT_SECRET = new TextEncoder().encode(getJWTSecret());
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);

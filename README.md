@@ -7,6 +7,7 @@
 - **安全链接生成**：为每个卡密生成唯一的64位随机令牌链接
 - **批量导入**：支持从text.txt格式批量导入卡密数据
 - **使用追踪**：自动记录卡密使用状态和时间
+- **确认使用**：首次访问需要用户确认使用，防止误操作
 - **分类管理**：按使用状态筛选卡密（全部/已使用/未使用）
 - **卡密恢复**：将误标记为已使用的卡密恢复为未使用状态
 - **批量导出**：导出未使用卡密的链接和详细信息
@@ -61,28 +62,32 @@ npm run dev
 
 ## 部署到Vercel
 
-### 1. 推送代码到GitHub
+### 快速部署
 
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/yourusername/card-key-manager.git
-git push -u origin main
-```
+1. **推送代码到GitHub**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git remote add origin https://github.com/yourusername/card-key-manager.git
+   git push -u origin main
+   ```
 
-### 2. 连接Vercel
+2. **连接Vercel**
+   - 访问 [Vercel Dashboard](https://vercel.com/dashboard)
+   - 点击 "New Project" 并导入GitHub仓库
 
-1. 访问 [Vercel Dashboard](https://vercel.com/dashboard)
-2. 点击 "New Project"
-3. 导入你的GitHub仓库
-4. 配置环境变量：
-   - `JWT_SECRET`: 一个强随机字符串
-   - `NEXT_PUBLIC_BASE_URL`: 你的Vercel域名 (如: https://your-app.vercel.app)
+3. **配置环境变量**
+   在Vercel项目设置中添加：
+   ```
+   JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
+   NEXT_PUBLIC_BASE_URL=https://your-project-name.vercel.app
+   ```
 
-### 3. 部署
+4. **自动部署**
+   Vercel会自动构建和部署应用
 
-Vercel会自动构建和部署你的应用。
+> 📖 **详细部署指南**：查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 获取完整的部署说明和故障排除指南。
 
 ## 使用说明
 
@@ -110,8 +115,10 @@ Vercel会自动构建和部署你的应用。
 
 1. 通过管理员提供的链接访问卡密
 2. 链接格式：`https://your-domain.com/key/[token]`
-3. 自动显示格式化的卡密信息
-4. 支持一键复制功能
+3. 首次访问需要确认使用（显示基本信息和重要提示）
+4. 确认后自动标记为已使用，并显示完整卡密信息
+5. 再次访问已使用的卡密直接显示信息，无需重新确认
+6. 支持一键复制功能
 
 ## 安全特性
 

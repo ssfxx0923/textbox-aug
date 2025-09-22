@@ -23,21 +23,48 @@ export default function KeyPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
 
   useEffect(() => {
     if (token) {
-      fetchCardKey()
+      checkCardKeyStatus()
     }
   }, [token])
 
-  const fetchCardKey = async () => {
+  const fetchCardKey = async (confirmUse = false) => {
     try {
-      const response = await fetch(`/api/key/${token}`)
+      const url = confirmUse ? `/api/key/${token}?confirm=true` : `/api/key/${token}`
+      const response = await fetch(url)
       const data = await response.json()
       
       if (response.ok) {
         setCardKey(data.cardKey)
         setFormatted(data.formatted)
+        setShowConfirmation(false)
+      } else {
+        setError(data.error || '卡密不存在或已失效')
+      }
+    } catch (error) {
+      setError('获取卡密失败，请重试')
+    }
+    setLoading(false)
+  }
+
+  const checkCardKeyStatus = async () => {
+    try {
+      const response = await fetch(`/api/key/${token}?check=true`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        if (data.cardKey.is_used) {
+          // 已使用，直接显示信息
+          setCardKey(data.cardKey)
+          setFormatted(data.formatted)
+        } else {
+          // 未使用，显示确认界面
+          setShowConfirmation(true)
+          setCardKey(data.cardKey) // 保存卡密信息但不显示
+        }
       } else {
         setError(data.error || '卡密不存在或已失效')
       }
@@ -65,6 +92,11 @@ export default function KeyPage() {
     } catch (error) {
       console.error('复制失败:', error)
     }
+  }
+
+  const handleConfirmUse = async () => {
+    setLoading(true)
+    await fetchCardKey(true)
   }
 
   if (loading) {
@@ -107,6 +139,71 @@ export default function KeyPage() {
     )
   }
 
+  // 显示确认使用界面
+  if (showConfirmation && cardKey && !error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">确认使用卡密</h1>
+            <p className="text-gray-600">请确认您要使用这个卡密</p>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-6 w-6 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                      重要提示
+                    </h3>
+                    <div className="text-sm text-yellow-700 space-y-2">
+                      <p>• 点击"确认使用"后，您才能够查看完整的卡密信息</p>
+                      <p>• 即使你未使用，账号的到期时间也不会延长</p>                      
+                      <p>• 请确保您确实需要使用此卡密</p>
+                      <p>• 确认使用后退款可能受到限制</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <h4 className="font-medium text-gray-900 mb-2">卡密基本信息</h4>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p><span className="font-medium">邮箱：</span>{cardKey.email}</p>
+                    <p><span className="font-medium">到期日：</span>{cardKey.expiry_date}</p>
+                    <p><span className="font-medium">创建时间：</span>{new Date(cardKey.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button
+                    onClick={handleConfirmUse}
+                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    确认使用
+                  </button>
+                  <button
+                    onClick={() => window.history.back()}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-lg transition duration-200"
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
       <div className="container mx-auto px-4 py-8">
@@ -128,7 +225,7 @@ export default function KeyPage() {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-yellow-800 font-medium">
-                    此卡密已被标记为已使用 
+                    此卡密已使用 
                     {cardKey.used_at && ` (${new Date(cardKey.used_at).toLocaleString()})`}
                   </p>
                 </div>
