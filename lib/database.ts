@@ -217,7 +217,24 @@ function supportsVercelKV(): boolean {
 }
 
 function supportsUpstash(): boolean {
-  return !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.STORAGE_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.STORAGE_TOKEN;
+  const redisUrl = process.env.REDIS_URL;
+  
+  // 检查是否有完整的 REST API 凭据
+  if (url && token) return true;
+  
+  // 检查是否有 REDIS_URL 且包含密码
+  if (redisUrl) {
+    try {
+      const parsedUrl = new URL(redisUrl);
+      return !!parsedUrl.password;
+    } catch {
+      return false;
+    }
+  }
+  
+  return false;
 }
 
 // 获取数据库类型配置

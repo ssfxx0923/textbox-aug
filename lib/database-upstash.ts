@@ -29,11 +29,41 @@ class UpstashDatabaseManager {
   private readonly ADMINS_KEY = 'admins';
 
   constructor() {
-    // 从环境变量初始化 Upstash Redis
-    this.redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL!,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-    });
+    // 从环境变量初始化 Upstash Redis (支持多种环境变量名称)
+    const url = process.env.UPSTASH_REDIS_REST_URL || process.env.STORAGE_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.STORAGE_TOKEN;
+    const redisUrl = process.env.REDIS_URL;
+    
+    // 如果有标准的 REST API 凭据，使用它们
+    if (url && token) {
+      this.redis = new Redis({
+        url,
+        token,
+      });
+      return;
+    }
+    
+    // 如果只有 REDIS_URL，尝试从中解析 REST API 信息
+    if (redisUrl) {
+      try {
+        // 尝试将 redis:// URL 转换为 REST API 格式
+        const parsedUrl = new URL(redisUrl);
+        const restUrl = `https://${parsedUrl.hostname}`;
+        const token = parsedUrl.password;
+        
+        if (token) {
+          this.redis = new Redis({
+            url: restUrl,
+            token: token,
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to parse REDIS_URL:', error);
+      }
+    }
+    
+    throw new Error('Upstash Redis credentials not found. Please check environment variables: UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN or REDIS_URL');
   }
 
   // 生成安全令牌
