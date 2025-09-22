@@ -19,7 +19,7 @@
 
 - **前端**：Next.js 14 + React + TypeScript + Tailwind CSS
 - **后端**：Next.js API Routes
-- **数据库**：JSON文件存储 (无需编译，跨平台兼容)
+- **数据库**：Vercel KV (生产环境) / JSON文件存储 (开发环境)
 - **认证**：JWT + HTTP-only Cookies
 - **部署**：Vercel
 
@@ -82,9 +82,15 @@ npm run dev
    ```
    JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
    NEXT_PUBLIC_BASE_URL=https://your-project-name.vercel.app
+   DATABASE_TYPE=kv
    ```
 
-4. **自动部署**
+4. **启用 Vercel KV 数据库**
+   - 在 Vercel 项目设置中，进入 "Storage" 标签
+   - 点击 "Create Database" 选择 "KV"
+   - 创建后，KV 环境变量会自动添加到项目中
+
+5. **自动部署**
    Vercel会自动构建和部署应用
 
 > 📖 **详细部署指南**：查看 [DEPLOYMENT.md](./DEPLOYMENT.md) 获取完整的部署说明和故障排除指南。
@@ -119,6 +125,27 @@ npm run dev
 4. 确认后自动标记为已使用，并显示完整卡密信息
 5. 再次访问已使用的卡密直接显示信息，无需重新确认
 6. 支持一键复制功能
+
+## 数据持久化解决方案
+
+### 🔄 自动数据库选择
+系统会根据环境自动选择最佳的数据存储方案：
+
+- **生产环境 + Vercel KV**：使用 Vercel KV 数据库（推荐）
+- **开发环境**：使用本地 JSON 文件存储
+- **生产环境无 KV**：自动降级到 JSON 存储（会有数据丢失风险提醒）
+
+### 📊 数据备份功能
+- **自动备份**：管理后台提供一键数据导出功能
+- **格式标准**：导出 JSON 格式，便于数据迁移和恢复
+- **版本控制**：备份文件包含时间戳和版本信息
+
+### ⚠️ 重要提醒
+如果您遇到**数据突然消失**的问题，请：
+1. 立即在 Vercel 项目中启用 KV 数据库
+2. 设置环境变量 `DATABASE_TYPE=kv`
+3. 重新部署项目
+4. 定期使用备份功能保存数据
 
 ## 安全特性
 

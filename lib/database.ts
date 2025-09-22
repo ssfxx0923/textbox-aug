@@ -207,12 +207,46 @@ class DatabaseManager {
   }
 }
 
+// 混合数据库管理器 - 根据环境和配置自动选择存储方案
+import { getKVDatabase } from './database-kv';
+
+// 检查是否支持 Vercel KV
+function supportsVercelKV(): boolean {
+  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+}
+
+// 获取数据库类型配置
+function getDatabaseType(): 'json' | 'kv' {
+  const dbType = process.env.DATABASE_TYPE?.toLowerCase();
+  
+  // 如果明确指定了 kv 且支持，则使用 KV
+  if (dbType === 'kv' && supportsVercelKV()) {
+    return 'kv';
+  }
+  
+  // 生产环境且支持 KV，默认使用 KV
+  if (process.env.NODE_ENV === 'production' && supportsVercelKV()) {
+    return 'kv';
+  }
+  
+  // 其他情况使用 JSON
+  return 'json';
+}
+
 // 单例模式
 let dbInstance: DatabaseManager | null = null;
 
-export function getDatabase(): DatabaseManager {
-  if (!dbInstance) {
-    dbInstance = new DatabaseManager();
+export function getDatabase(): DatabaseManager | any {
+  const dbType = getDatabaseType();
+  
+  if (dbType === 'kv') {
+    console.log('🚀 Using Vercel KV database for persistent storage');
+    return getKVDatabase();
+  } else {
+    console.log('📁 Using JSON file database (data may not persist in production)');
+    if (!dbInstance) {
+      dbInstance = new DatabaseManager();
+    }
+    return dbInstance;
   }
-  return dbInstance;
 }
