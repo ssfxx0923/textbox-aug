@@ -40,6 +40,12 @@ export default function AdminPage() {
   const [importText, setImportText] = useState('')
   const [showImport, setShowImport] = useState(false)
   const [filterStatus, setFilterStatus] = useState<'all' | 'used' | 'unused'>('all')
+  const [showChangePassword, setShowChangePassword] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
   const router = useRouter()
 
   useEffect(() => {
@@ -271,6 +277,50 @@ ${cardKey.balance_url ? `余额查询URL：${cardKey.balance_url}` : '余额查�
     setSuccess(`已导出 ${unusedCardKeys.length} 个未使用的卡密详细信息`)
   }
 
+  // 修改密码
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setError('新密码与确认密码不一致')
+      return
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setError('新密码长度至少6位')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSuccess('密码修改成功')
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        })
+        setShowChangePassword(false)
+      } else {
+        setError(data.error)
+      }
+    } catch (error) {
+      setError('修改密码失败，请重试')
+    }
+  }
+
 
   if (loading) {
     return (
@@ -353,6 +403,12 @@ ${cardKey.balance_url ? `余额查询URL：${cardKey.balance_url}` : '余额查�
             <div className="flex items-center space-x-4">
               <span className="text-gray-700">欢迎，{admin?.username}</span>
               <button
+                onClick={() => setShowChangePassword(!showChangePassword)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm"
+              >
+                修改密码
+              </button>
+              <button
                 onClick={handleLogout}
                 className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded text-sm"
               >
@@ -433,6 +489,78 @@ ${cardKey.balance_url ? `余额查询URL：${cardKey.balance_url}` : '余额查�
             </div>
           </div>
         </div>
+
+        {/* 修改密码界面 */}
+        {showChangePassword && (
+          <div className="bg-white shadow rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-medium mb-4">修改管理员密码</h3>
+            <form onSubmit={handleChangePassword} className="max-w-md">
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  当前密码
+                </label>
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, currentPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  新密码
+                </label>
+                <input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
+                  minLength={6}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">密码长度至少6位</p>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  确认新密码
+                </label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-4">
+                <button
+                  type="submit"
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                >
+                  确认修改
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowChangePassword(false)
+                    setPasswordForm({
+                      currentPassword: '',
+                      newPassword: '',
+                      confirmPassword: ''
+                    })
+                  }}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
+                >
+                  取消
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* 操作按钮 */}
         <div className="mb-6 flex flex-wrap gap-4">

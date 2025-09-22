@@ -189,6 +189,19 @@ class DatabaseManager {
     return this.data.admins.find(admin => admin.username === username);
   }
 
+  // 更新管理员密码
+  updateAdminPassword(username: string, passwordHash: string): boolean {
+    const admin = this.data.admins.find(admin => admin.username === username);
+    
+    if (admin) {
+      admin.password_hash = passwordHash;
+      this.saveData();
+      return true;
+    }
+    
+    return false;
+  }
+
   close() {
     // JSON文件存储不需要关闭连接
   }
