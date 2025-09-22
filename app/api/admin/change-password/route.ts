@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
     
     const db = getDatabase();
-    const adminUser = await db.getAdminByUsername(admin.username) as any;
+    const adminUser = db.getAdminByUsername(admin.username) as any;
     
     if (!adminUser) {
       return NextResponse.json({ error: '管理员不存在' }, { status: 404 });
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const newPasswordHash = await hashPassword(newPassword);
     
     // 更新密码
-    const success = await db.updateAdminPassword(admin.username, newPasswordHash);
+    const success = db.updateAdminPassword(admin.username, newPasswordHash);
     
     if (!success) {
       return NextResponse.json({ error: '密码更新失败' }, { status: 500 });

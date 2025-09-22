@@ -207,89 +207,12 @@ class DatabaseManager {
   }
 }
 
-// 混合数据库管理器 - 根据环境和配置自动选择存储方案
-import { getKVDatabase } from './database-kv';
-import { getUpstashDatabase } from './database-upstash';
-
-// 检查各种数据库支持
-function supportsVercelKV(): boolean {
-  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
-}
-
-function supportsUpstash(): boolean {
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.STORAGE_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.STORAGE_TOKEN;
-  const redisUrl = process.env.REDIS_URL;
-  
-  // 检查是否有完整的 REST API 凭据
-  if (url && token) return true;
-  
-  // 检查是否有 REDIS_URL 且包含密码
-  if (redisUrl) {
-    try {
-      const parsedUrl = new URL(redisUrl);
-      return !!parsedUrl.password;
-    } catch {
-      return false;
-    }
-  }
-  
-  return false;
-}
-
-// 获取数据库类型配置
-function getDatabaseType(): 'json' | 'kv' | 'upstash' {
-  const dbType = process.env.DATABASE_TYPE?.toLowerCase();
-  
-  // 明确指定数据库类型
-  if (dbType === 'kv' && supportsVercelKV()) {
-    return 'kv';
-  }
-  
-  if (dbType === 'upstash' && supportsUpstash()) {
-    return 'upstash';
-  }
-  
-  if (dbType === 'json') {
-    return 'json';
-  }
-  
-  // 自动检测最佳数据库（生产环境优先级）
-  if (process.env.NODE_ENV === 'production') {
-    if (supportsVercelKV()) {
-      return 'kv';
-    }
-    if (supportsUpstash()) {
-      return 'upstash';
-    }
-    console.warn('⚠️  Production environment detected but no persistent database configured. Data may be lost on restart!');
-  }
-  
-  // 默认使用 JSON
-  return 'json';
-}
-
 // 单例模式
 let dbInstance: DatabaseManager | null = null;
 
-export function getDatabase(): DatabaseManager | any {
-  const dbType = getDatabaseType();
-  
-  switch (dbType) {
-    case 'kv':
-      console.log('🚀 Using Vercel KV database for persistent storage');
-      return getKVDatabase();
-      
-    case 'upstash':
-      console.log('🔥 Using Upstash Redis database for persistent storage');
-      return getUpstashDatabase();
-      
-    case 'json':
-    default:
-      console.log('📁 Using JSON file database (data may not persist in production)');
-      if (!dbInstance) {
-        dbInstance = new DatabaseManager();
-      }
-      return dbInstance;
+export function getDatabase(): DatabaseManager {
+  if (!dbInstance) {
+    dbInstance = new DatabaseManager();
   }
+  return dbInstance;
 }
