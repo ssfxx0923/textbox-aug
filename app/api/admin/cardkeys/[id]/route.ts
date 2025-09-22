@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyJWT } from '@/lib/auth';
 import { getDatabase } from '@/lib/database';
+import type { CardKey } from '@/lib/database';
 
 // 验证管理员权限的中间件
 async function verifyAdmin(request: NextRequest) {
@@ -25,7 +26,7 @@ export async function DELETE(
     }
     
     const db = getDatabase();
-    const success = db.deleteCardKey(params.id);
+    const success = await db.deleteCardKey(params.id);
     
     if (!success) {
       return NextResponse.json({ error: '卡密不存在' }, { status: 404 });
@@ -58,15 +59,15 @@ export async function PATCH(
     const db = getDatabase();
     
     // 首先通过ID找到secure_token
-    const cardKeys = db.getAllCardKeys();
-    const cardKey = cardKeys.find(ck => ck.id === params.id);
+    const cardKeys = await db.getAllCardKeys();
+    const cardKey = cardKeys.find((ck: CardKey) => ck.id === params.id);
     
     if (!cardKey) {
       return NextResponse.json({ error: '卡密不存在' }, { status: 404 });
     }
     
     if (action === 'mark_used') {
-      const success = db.markCardKeyAsUsed(cardKey.secure_token);
+      const success = await db.markCardKeyAsUsed(cardKey.secure_token);
       
       if (!success) {
         return NextResponse.json({ error: '卡密已被使用或不存在' }, { status: 400 });
@@ -74,7 +75,7 @@ export async function PATCH(
       
       return NextResponse.json({ message: '卡密已标记为已使用' });
     } else if (action === 'restore') {
-      const success = db.restoreCardKey(cardKey.secure_token);
+      const success = await db.restoreCardKey(cardKey.secure_token);
       
       if (!success) {
         return NextResponse.json({ error: '卡密未被使用或不存在' }, { status: 400 });

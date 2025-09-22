@@ -19,7 +19,7 @@
 
 - **前端**：Next.js 14 + React + TypeScript + Tailwind CSS
 - **后端**：Next.js API Routes
-- **数据库**：Vercel KV (生产环境) / JSON文件存储 (开发环境)
+- **数据库**：Upstash Redis / Vercel KV (生产环境) / JSON文件存储 (开发环境)
 - **认证**：JWT + HTTP-only Cookies
 - **部署**：Vercel
 
@@ -85,10 +85,21 @@ npm run dev
    DATABASE_TYPE=kv
    ```
 
-4. **启用 Vercel KV 数据库**
-   - 在 Vercel 项目设置中，进入 "Storage" 标签
-   - 点击 "Create Database" 选择 "KV"
-   - 创建后，KV 环境变量会自动添加到项目中
+4. **设置数据库（多种方案）**
+   
+   **方案A: Upstash Redis (最推荐)**
+   - 在 Vercel 项目中，进入 "Storage" 标签
+   - 点击 "Browse Marketplace" 
+   - 选择 "Upstash" Redis 集成
+   - 完成设置后，设置 `DATABASE_TYPE=upstash`
+   
+   **方案B: Vercel KV (如果可用)**
+   - 选择其他 KV 集成
+   - 设置 `DATABASE_TYPE=kv`
+   
+   **方案C: 保持 JSON 存储**
+   - 设置 `DATABASE_TYPE=json`
+   - 适用于开发环境（生产环境有数据丢失风险）
 
 5. **自动部署**
    Vercel会自动构建和部署应用

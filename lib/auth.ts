@@ -41,7 +41,7 @@ export async function verifyJWT(token: string): Promise<any> {
 
 export async function authenticateAdmin(username: string, password: string) {
   const db = getDatabase();
-  const admin = db.getAdminByUsername(username) as any;
+  const admin = await db.getAdminByUsername(username) as any;
   
   if (!admin) {
     return null;
@@ -59,11 +59,11 @@ export async function authenticateAdmin(username: string, password: string) {
 // 初始化默认管理员账户
 export async function initDefaultAdmin() {
   const db = getDatabase();
-  const existingAdmin = db.getAdminByUsername('admin');
+  const existingAdmin = await db.getAdminByUsername('admin');
   
   if (!existingAdmin) {
     const passwordHash = await hashPassword('admin123');
-    db.addAdmin('admin', passwordHash);
+    await db.addAdmin('admin', passwordHash);
     console.log('Default admin created: username=admin, password=admin123');
   }
 }

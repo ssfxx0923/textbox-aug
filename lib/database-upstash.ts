@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
@@ -23,9 +23,18 @@ interface Admin {
   created_at: string;
 }
 
-class VercelKVDatabaseManager {
+class UpstashDatabaseManager {
+  private redis: Redis;
   private readonly CARDKEYS_KEY = 'cardkeys';
   private readonly ADMINS_KEY = 'admins';
+
+  constructor() {
+    // 从环境变量初始化 Upstash Redis
+    this.redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+  }
 
   // 生成安全令牌
   generateSecureToken(): string {
@@ -56,8 +65,8 @@ class VercelKVDatabaseManager {
     const existingCards = await this.getAllCardKeys();
     existingCards.push(newCardKey);
     
-    // 保存到 KV
-    await kv.set(this.CARDKEYS_KEY, existingCards);
+    // 保存到 Redis
+    await this.redis.set(this.CARDKEYS_KEY, JSON.stringify(existingCards));
 
     return secure_token;
   }
@@ -85,8 +94,8 @@ class VercelKVDatabaseManager {
       tokens.push(secure_token);
     }
     
-    // 批量保存到 KV
-    await kv.set(this.CARDKEYS_KEY, existingCards);
+    // 批量保存到 Redis
+    await this.redis.set(this.CARDKEYS_KEY, JSON.stringify(existingCards));
     return tokens;
   }
 
@@ -104,7 +113,7 @@ class VercelKVDatabaseManager {
     if (cardKey) {
       cardKey.is_used = true;
       cardKey.used_at = new Date().toISOString();
-      await kv.set(this.CARDKEYS_KEY, cards);
+      await this.redis.set(this.CARDKEYS_KEY, JSON.stringify(cards));
       return true;
     }
     
@@ -119,7 +128,7 @@ class VercelKVDatabaseManager {
     if (cardKey) {
       cardKey.is_used = false;
       cardKey.used_at = undefined;
-      await kv.set(this.CARDKEYS_KEY, cards);
+      await this.redis.set(this.CARDKEYS_KEY, JSON.stringify(cards));
       return true;
     }
     
@@ -129,14 +138,15 @@ class VercelKVDatabaseManager {
   // 获取所有卡密（管理端）
   async getAllCardKeys(): Promise<CardKey[]> {
     try {
-      const cards = await kv.get<CardKey[]>(this.CARDKEYS_KEY);
-      if (!cards) return [];
+      const cardsData = await this.redis.get(this.CARDKEYS_KEY);
+      if (!cardsData) return [];
       
+      const cards = typeof cardsData === 'string' ? JSON.parse(cardsData) : cardsData;
       return [...cards].sort((a, b) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
     } catch (error) {
-      console.error('Error getting cards from KV:', error);
+      console.error('Error getting cards from Upstash:', error);
       return [];
     }
   }
@@ -148,7 +158,7 @@ class VercelKVDatabaseManager {
     
     if (index !== -1) {
       cards.splice(index, 1);
-      await kv.set(this.CARDKEYS_KEY, cards);
+      await this.redis.set(this.CARDKEYS_KEY, JSON.stringify(cards));
       return true;
     }
     
@@ -182,7 +192,7 @@ class VercelKVDatabaseManager {
     
     const existingAdmins = await this.getAllAdmins();
     existingAdmins.push(newAdmin);
-    await kv.set(this.ADMINS_KEY, existingAdmins);
+    await this.redis.set(this.ADMINS_KEY, JSON.stringify(existingAdmins));
     
     return id;
   }
@@ -196,10 +206,13 @@ class VercelKVDatabaseManager {
   // 获取所有管理员
   async getAllAdmins(): Promise<Admin[]> {
     try {
-      const admins = await kv.get<Admin[]>(this.ADMINS_KEY);
-      return Array.isArray(admins) ? admins : [];
+      const adminsData = await this.redis.get(this.ADMINS_KEY);
+      if (!adminsData) return [];
+      
+      const result = typeof adminsData === 'string' ? JSON.parse(adminsData) : adminsData;
+      return Array.isArray(result) ? result : [];
     } catch (error) {
-      console.error('Error getting admins from KV:', error);
+      console.error('Error getting admins from Upstash:', error);
       return [];
     }
   }
@@ -211,32 +224,14 @@ class VercelKVDatabaseManager {
     
     if (admin) {
       admin.password_hash = passwordHash;
-      await kv.set(this.ADMINS_KEY, admins);
+      await this.redis.set(this.ADMINS_KEY, JSON.stringify(admins));
       return true;
     }
     
     return false;
   }
 
-  // 数据迁移：从 JSON 文件导入到 KV
-  async migrateFromJSON(jsonData: { cardKeys: CardKey[], admins: Admin[] }): Promise<void> {
-    try {
-      if (jsonData.cardKeys && jsonData.cardKeys.length > 0) {
-        await kv.set(this.CARDKEYS_KEY, jsonData.cardKeys);
-        console.log(`Migrated ${jsonData.cardKeys.length} card keys to KV`);
-      }
-      
-      if (jsonData.admins && jsonData.admins.length > 0) {
-        await kv.set(this.ADMINS_KEY, jsonData.admins);
-        console.log(`Migrated ${jsonData.admins.length} admins to KV`);
-      }
-    } catch (error) {
-      console.error('Migration error:', error);
-      throw error;
-    }
-  }
-
-  // 数据备份：从 KV 导出到 JSON 格式
+  // 数据导出
   async exportToJSON(): Promise<{ cardKeys: CardKey[], admins: Admin[] }> {
     const cardKeys = await this.getAllCardKeys();
     const admins = await this.getAllAdmins();
@@ -248,21 +243,16 @@ class VercelKVDatabaseManager {
   }
 
   close() {
-    // KV 连接不需要手动关闭
+    // Upstash Redis 连接不需要手动关闭
   }
 }
 
 // 单例模式
-let kvDbInstance: VercelKVDatabaseManager | null = null;
+let upstashDbInstance: UpstashDatabaseManager | null = null;
 
-export function getKVDatabase(): VercelKVDatabaseManager {
-  if (!kvDbInstance) {
-    kvDbInstance = new VercelKVDatabaseManager();
+export function getUpstashDatabase(): UpstashDatabaseManager {
+  if (!upstashDbInstance) {
+    upstashDbInstance = new UpstashDatabaseManager();
   }
-  return kvDbInstance;
-}
-
-// 兼容性函数：根据环境选择数据库
-export function getDatabase(): VercelKVDatabaseManager {
-  return getKVDatabase();
+  return upstashDbInstance;
 }
