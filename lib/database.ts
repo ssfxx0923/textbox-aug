@@ -2,6 +2,7 @@ import { createClient } from '@libsql/client';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import fs from 'fs';
+import { getDatabase as getNeonDatabase } from './database-neon';
 
 export interface CardKey {
   id: string;
@@ -211,6 +212,12 @@ class DatabaseManager {
 let dbInstance: DatabaseManager | null = null;
 
 export function getDatabase(): DatabaseManager {
+  // 如果有 DATABASE_URL 环境变量，使用 Neon PostgreSQL
+  if (process.env.DATABASE_URL) {
+    return getNeonDatabase() as any;
+  }
+  
+  // 否则使用 JSON 文件存储
   if (!dbInstance) {
     dbInstance = new DatabaseManager();
   }
