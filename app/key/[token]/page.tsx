@@ -166,7 +166,10 @@ export default function KeyPage() {
                       <p>• 点击"确认使用"后，您才能够查看完整的卡密信息</p>
                       <p>• 即使你未使用，账号的到期时间也不会延长</p>                      
                       <p>• 请确保您确实需要使用此卡密</p>
-                      <p>• 确认使用后退款可能受到限制</p>
+                      <p>• 使用前请先阅读教程：
+                        <a href="https://aug560.ssfxx.com" target="_blank" rel="noreferrer" className="text-blue-700 underline ml-1">https://aug560.ssfxx.com</a>
+                      </p>
+                      <p className="font-semibold">• 请先阅读教程再决定是否使用卡密；一旦使用将不可退款</p>
                     </div>
                   </div>
                 </div>
@@ -227,6 +230,8 @@ export default function KeyPage() {
                   <p className="text-sm text-yellow-800 font-medium">
                     此卡密已使用 
                     {cardKey.used_at && ` (${new Date(cardKey.used_at).toLocaleString()})`}
+                    <br />
+                    如非本人使用，请联系客服更换。
                   </p>
                 </div>
               </div>
@@ -243,6 +248,17 @@ export default function KeyPage() {
 
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+            {/* 教程与换号提示 */}
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
+              <div className="text-sm text-blue-800">
+                <p className="mb-1">使用前请先阅读教程：
+                  <a href="https://aug560.ssfxx.com" target="_blank" rel="noreferrer" className="text-blue-700 underline ml-1">https://aug560.ssfxx.com</a>
+                </p>
+                <p>如账号被封禁，可前往换号：
+                  <a href="http://augment.zhinianblog.cn/changeToken.php" target="_blank" rel="noreferrer" className="text-blue-700 underline ml-1">http://augment.zhinianblog.cn/changeToken.php</a>
+                </p>
+              </div>
+            </div>
             {/* 格式化显示 */}
             <div className="bg-gray-50 px-6 py-4 border-b">
               <div className="flex justify-between items-center">
